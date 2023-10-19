@@ -73,7 +73,7 @@ async function select_minutes_render(ctx: rlhubContext) {
         for (let i = 0; i < user.hours.length; i++) {
 
             const hour = user.hours[i].hour < 10 ? `0${user.hours[i].hour}:00` : `${user.hours[i].hour}:00`; // Преобразование в формат "00" или "0X" для часов
-            let button = [{ text: hour, callback_data: `select_hour ${user.hours[i].hour}` }]
+            let button = { text: `${hour}`, callback_data: `select_hour ${user.hours[i].hour}` }
 
             // @ts-ignore
             // extra.reply_markup.inline_keyboard.push(button)
@@ -154,7 +154,39 @@ async function select_minutes_handler(ctx: rlhubContext) {
 
             if (data.split(" ")[0] === 'select_minute') {
 
+                console.log('select min')
                 await periodRender(ctx, data)
+
+            }
+            
+            if (data.split(" ")[0] === 'select_min') {
+
+                // console.log('select min')
+                let min = data.split(" ")[1]
+
+                const update = {
+                    $push: {}
+                };
+
+                const user = await User.findOne({ id: ctx.from.id })
+
+                for (let i = 0; user.hours.length > i; i++) {
+
+                    if (user.hours[i].hour === ctx.scene.session.selected_hour) {
+
+                        update.$push[`hours.${i}.minutes`] = parseFloat(min);
+
+                    }
+
+                }
+
+
+
+                await User.findOneAndUpdate({ id: ctx.from.id }, update)
+
+                console.log(ctx.scene.session.selected_hour)
+                ctx.answerCbQuery("")
+                // await periodRender(ctx, data)
 
             }
 
@@ -182,6 +214,8 @@ async function periodRender(ctx, data) {
         const period: number = parseFloat(data.split(" ")[1])
         const hour = ctx.scene.session.selected_hour < 10 ? `0${ctx.scene.session.selected_hour}` : `${ctx.scene.session.selected_hour}`
 
+        const user = await User.findOne({ id: ctx.from.id })
+
         let message: string = `Выберите минуту, котору хотите добавить для ${hour}:00`
         let extra: ExtraEditMessageText = {
             parse_mode: 'HTML',
@@ -193,6 +227,9 @@ async function periodRender(ctx, data) {
         let row = []
 
         for (let i = period; i < period + 15; i++) {
+
+            // for (let z = 0; z < user.hours[])
+
             const str = i < 10 ? `${hour}:0${i}` : `${hour}:${i}`;
             const button = { text: `${str}`, callback_data: `select_min ${i}` }
 

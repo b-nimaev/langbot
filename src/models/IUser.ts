@@ -19,7 +19,7 @@ interface IUser extends User {
     weekends?: boolean,
     hours?: {
         hour: number,
-        minutes: number
+        minutes: number[]
     }[],
     level?: number,
     createdAt?: any
@@ -46,7 +46,7 @@ const userSchema: Schema<IUser> = new Schema<IUser>({
     },
     hours: { type: [ {
         hour: { type: Number },
-        minutes: { type: Number, default: 0 }
+        minutes: { type: [ Number ], default: [] }
     } ], required: false },
     gender: { type: String || undefined, required: false },
     chats: { type: [mongoose.Schema.Types.ObjectId], required: false },
