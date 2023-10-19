@@ -68,14 +68,27 @@ async function select_minutes_render(ctx: rlhubContext) {
 
         const user = await User.findOne({ id: ctx.from.id })
 
+        let row = []
+
         for (let i = 0; i < user.hours.length; i++) {
 
-            const hour = user.hours[i] < 10 ? `0${user.hours[i]}:00` : `${user.hours[i]}:00`; // Преобразование в формат "00" или "0X" для часов
-            let button = [{ text: hour, callback_data: `select_hour ${user.hours[i]}` }]
+            const hour = user.hours[i].hour < 10 ? `0${user.hours[i].hour}:00` : `${user.hours[i].hour}:00`; // Преобразование в формат "00" или "0X" для часов
+            let button = [{ text: hour, callback_data: `select_hour ${user.hours[i].hour}` }]
 
             // @ts-ignore
-            extra.reply_markup.inline_keyboard.push(button)
-            
+            // extra.reply_markup.inline_keyboard.push(button)
+
+            row.push(button)
+
+            if (row.length === 3) {
+                extra.reply_markup.inline_keyboard.push(row)
+                row = []
+            }
+
+        }
+
+        if (row.length > 0) {
+            extra.reply_markup.inline_keyboard.push(row)
         }
 
         extra.reply_markup.inline_keyboard.push([{ text: 'Пропустить', callback_data: 'skip' }])
@@ -278,8 +291,10 @@ async function select_time_handler(ctx: rlhubContext) {
                 await User.findOneAndUpdate({
                     id: ctx.from.id
                 }, {
-                    $addToSet: {
-                        hours: parseFloat(data)
+                    $push: {
+                        hours: {
+                            hour: parseFloat(data)
+                        }
                     }
                 })
 
@@ -292,7 +307,9 @@ async function select_time_handler(ctx: rlhubContext) {
                     id: ctx.from.id
                 }, {
                     $pull: {
-                        hours: parseFloat(data)
+                        hours: {
+                            hour: parseFloat(data)
+                        }
                     }
                 })
                 
@@ -321,7 +338,9 @@ async function select_time_render (ctx: rlhubContext) {
                 let hours: string = ``
 
                 for (let i = 0; i < user.hours.length; i++) {
-                    const hour = user.hours[i] < 10 ? `0${user.hours[i]}:00` : `${user.hours[i]}:00`; // Преобразование в формат "00" или "0X" для часов
+                    
+                    const hour = user.hours[i].hour < 10 ? `0${user.hours[i].hour}:00` : `${user.hours[i].hour}:00`; // Преобразование в формат "00" или "0X" для часов
+                    
                     if (i === user.hours.length - 1) {
                         hours += `${hour}`
                     } else {
@@ -348,11 +367,25 @@ async function select_time_render (ctx: rlhubContext) {
         for (let i = 0; i < 24; i++) {
             const hour = i < 10 ? `0${i}` : `${i}`; // Преобразование в формат "00" или "0X" для часов
             let exists = 0
-            if (user.hours.indexOf(parseFloat(hour)) !== -1) {
+            
+            for (let y = 0; y < user.hours.length; y++) {
 
-                exists = 1
-                
+                let userhour = user.hours[y]
+
+                if (userhour.hour === parseFloat(hour)) {
+                    
+                    exists = 1
+
+                }
+
             }
+
+            // if (user.hours.indexOf(parseFloat(hour)) !== -1) {
+
+                // exists = 1
+                
+            // }
+
             const callbackData = `${exists === 1 ? "exists_time_" : "selected_time_" }${hour}`;
             
             // Создаем кнопку для текущего часа
